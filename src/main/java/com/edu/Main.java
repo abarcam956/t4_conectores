@@ -1,5 +1,6 @@
 package com.edu;
 
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
@@ -20,15 +21,16 @@ public class Main {
         final String dbProtocol = "jdbc:sqlite:";
 
         // Las bases de datos de SQLite son archivos.
-        //Path dbPath = Path.of(System.getProperty("java.io.tmpdir"), "test.db");
-        //String dbUrl = String.format("%s%s", dbProtocol, dbPath);
+        Path dbPath = Path.of(System.getProperty("java.io.tmpdir"), "test.db");
+        String dbUrl = String.format("%s%s", dbProtocol, dbPath);
 
         // Alternativa particular de SQLite: base de datos en memoria.
-        String dbUrl = String.format("%s", dbProtocol, ":memory:");
+        //String dbUrl = String.format("%s", dbProtocol, ":memory:");
 
         Centro[] centros = new Centro[] {
             new Centro(11004866, "IES Castillo de Luna", Titularidad.PUBLICA),
             new Centro(11700602, "IES Pintor Juan Lara", Titularidad.PUBLICA),
+            new Centro(11004039, "IES SIDON" , Titularidad.PUBLICA),
             new Centro(21002100, "IES Pade José Miravent", Titularidad.PUBLICA)
         };
 
@@ -60,28 +62,40 @@ public class Main {
                 """);
             }
 
-                String sqlString = "INSERT INTO Centro VALUES (?, ?, ?);";
+            conn.setAutoCommit(false);
 
-                try (PreparedStatement pstmt = conn.prepareStatement(sqlString)){
-                    for(Centro centro: centros) {
-                        pstmt.setInt(1, centro.getId());
-                        pstmt.setString(2, centro.getNombre());
-                        pstmt.setString(3, centro.getTitularidad().toString());
-                        pstmt.executeUpdate();
-                    } 
-                }
+            String sqlString = "INSERT INTO Centro VALUES (?, ?, ?);";
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sqlString)){
+                for(Centro centro: centros) {
+                    pstmt.setInt(1, centro.getId());
+                    pstmt.setString(2, centro.getNombre());
+                    pstmt.setString(3, centro.getTitularidad().toString());
+                    pstmt.addBatch();
+                } 
+                pstmt.executeBatch();
+                conn.commit();
+            }
+            catch(SQLException err) {
+                System.err.println("La insercion de centros ha fallado");
+                conn.rollback();
+                System.exit(1);
+            }
+            finally{
+                conn.setAutoCommit(true);
+            }
                 
-                try (Statement stmt = conn.createStatement()) {
-                    ResultSet rs = stmt.executeQuery("SELECT id, nombre, titularidad FROM Centro");
-                    while(rs.next()){
-                        int id = rs.getInt(1);
-                        String nombre = rs.getString(2);
-                        Titularidad titularidad = Titularidad.fromString(rs.getString(3));
+            try (Statement stmt = conn.createStatement()) {
+                ResultSet rs = stmt.executeQuery("SELECT id, nombre, titularidad FROM Centro");
+                while(rs.next()){
+                    int id = rs.getInt(1);
+                    String nombre = rs.getString(2);
+                    Titularidad titularidad = Titularidad.fromString(rs.getString(3));
 
-                        Centro centro = new Centro(id, nombre, titularidad);
-                        System.out.println(centro);
-                    }
+                    Centro centro = new Centro(id, nombre, titularidad);
+                    System.out.println(centro);
                 }
+            }
 
                 System.out.println("---- **** ------");
 
