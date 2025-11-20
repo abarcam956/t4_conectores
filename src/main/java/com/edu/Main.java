@@ -16,6 +16,14 @@ import com.edu.domain.Estudiante;
 import com.edu.domain.Titularidad;
 
 public class Main {
+
+    public static Centro resultSetToCentro(ResultSet rs) throws SQLException{
+        int id = rs.getInt(1);
+        String nombre = rs.getString(2);
+        Titularidad titularidad = Titularidad.fromString(rs.getString(3));
+        return new Centro(id, nombre, titularidad);
+    }
+
     public static void main(String[] args) {
         
         final String dbProtocol = "jdbc:sqlite:";
