@@ -21,11 +21,13 @@ public class Main {
         final String dbProtocol = "jdbc:sqlite:";
 
         // Las bases de datos de SQLite son archivos.
-        Path dbPath = Path.of(System.getProperty("java.io.tmpdir"), "test.db");
-        String dbUrl = String.format("%s%s", dbProtocol, dbPath);
+        //Path dbPath = Path.of(System.getProperty("java.io.tmpdir"), "test.db");
+        //String dbUrl = String.format("%s%s", dbProtocol, dbPath);
 
         // Alternativa particular de SQLite: base de datos en memoria.
-        //String dbUrl = String.format("%s", dbProtocol, ":memory:");
+        String dbUrl = String.format("%s", dbProtocol, ":memory:");
+
+        ConnectionPool cp = ConnectionPool.getInstance(dbUrl);
 
         Centro[] centros = new Centro[] {
             new Centro(11004866, "IES Castillo de Luna", Titularidad.PUBLICA),
@@ -34,8 +36,7 @@ public class Main {
             new Centro(21002100, "IES Pade José Miravent", Titularidad.PUBLICA)
         };
 
-        try (Connection conn = DriverManager.getConnection(dbUrl)) {
-
+        try (Connection conn = cp.getConnection()) {
             System.out.println("Hemos logrado conectar a la base de datos");
 
             try (Statement stmt = conn.createStatement()) {
@@ -139,5 +140,7 @@ public class Main {
         catch(SQLException err) {
             System.err.println("Error de conexión. " + err.getMessage());
         }
+
+        Chorrada.ejecutar();
     }
 }
