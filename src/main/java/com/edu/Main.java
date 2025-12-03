@@ -1,15 +1,14 @@
 package com.edu;
 
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.Date;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.edu.domain.Centro;
@@ -53,15 +52,25 @@ public class Main {
     }
 
     public static List<Centro> getCentros() throws SQLException{
-        
+        String sqlString = "SELECT * FROM Centro";
+        ConnectionPool cp = ConnectionPool.getInstance();
+        List<Centro> centros = new ArrayList<>();
+        try (
+            Connection conn = cp.getConnection();
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(sqlString);
+        ){
+            while (rs.next()) centros.add(resultSetToCentro(rs));
+        }
+        return centros;
     }
 
     public static Estudiante getEstudiante(int id) throws SQLException{
-
+        return null;
     }
 
     public static List<Estudiante> getEstudiantes() throws SQLException{
-
+        return null;
     }
 
     public static void main(String[] args) {
