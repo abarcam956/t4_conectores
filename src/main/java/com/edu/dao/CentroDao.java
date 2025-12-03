@@ -25,10 +25,10 @@ public class CentroDao implements GenericDao<Centro> {
         Titularidad titularidad = Titularidad.fromString(rs.getString("titularidad"));
         return new Centro(id, nombre, titularidad);
     }
-    
+
     @Override
     public Centro get(int id) throws SQLException {
-        String sqlString= "SELECT * FROM Centro WHERE id= ?;";
+        String sqlString= "SELECT * FROM Centro WHERE id= ?";
         try (
             Connection conn = cp.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sqlString)
@@ -42,7 +42,8 @@ public class CentroDao implements GenericDao<Centro> {
 
     @Override
     public List<Centro> get() throws SQLException {
-        String sqlString = "SELECT * FROM Centro;";
+        String sqlString = "SELECT * FROM Centro";
+
         List<Centro> centros = new ArrayList<>();
 
         try (
@@ -63,23 +64,8 @@ public class CentroDao implements GenericDao<Centro> {
     }
 
     @Override
-    public int insert(Centro entity) throws SQLException {
-        String sqlString = "INSERT INTO Centro (nombre, titularidad, id) VALUES (?, ?, ?);";
-
-        try (
-            Connection conn = cp.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sqlString);
-        ){
-            setParams(pstmt, entity);
-            pstmt.executeUpdate();
-            return entity.getId();
-        }
-        return 0;
-    }
-
-    @Override
     public boolean remove(int id) throws SQLException {
-        String sqlString = "DELETE FROM Centro WHERE id= ?;";
+        String sqlString = "DELETE FROM Centro WHERE id= ?";
 
         try (
             Connection conn = cp.getConnection();
@@ -91,26 +77,61 @@ public class CentroDao implements GenericDao<Centro> {
         }
     }
 
+    private void setParams(PreparedStatement pstmt, Centro centro) throws SQLException {
+        pstmt.setString(1, centro.getNombre());                    // nombre
+        pstmt.setString(2, centro.getTitularidad().toString());   // titularidad
+        pstmt.setInt(3, centro.getId());                          // id
+    }
+
     @Override
-    public void update(Centro entity) throws SQLException {
-        String sqlString = "UPDATE Centro SET nombre = ?, titularidad = ? WHERE id = ?;";
+    public int insert(Centro centro) throws SQLException {
+        String sqlString = "INSERT INTO Centro (nombre, titularidad, id) VALUES (?, ?, ?)";
+
+        try (
+            Connection conn = cp.getConnection();
+            PreparedStatement pstmt = conn.prepareStatement(sqlString);
+        ){
+            setParams(pstmt, centro);
+            pstmt.executeUpdate();
+            return centro.getId();
+        }
+    }
+
+    @Override
+    public void insert(Iterable<Centro> centros) throws SQLException {
+        String sqlString = "INSERT INTO Centro (nombre, titularidad, id) VALUES (?, ?, ?)";
+
+        Connection conn = cp.getConnection();
+        conn.setAutoCommit(false);
+        try(PreparedStatement pstmt = conn.prepareStatement(sqlString)) {
+            for(Centro centro: centros) {
+                setParams(pstmt, centro);
+                pstmt.addBatch();
+            }
+            pstmt.executeBatch();
+            conn.commit();
+        } catch(SQLException err) {
+            err.printStackTrace();
+            conn.rollback();
+            throw err;
+        } finally {
+            conn.setAutoCommit(true);
+        }
+    }
+
+    @Override
+    public void update(Centro centro) throws SQLException {
+        String sqlString = "UPDATE Centro SET nombre = ?, titularidad = ? WHERE id = ?";
 
         try (
             Connection conn = cp.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sqlString);
         ) {
-            setParams(pstmt, entity);
+            setParams(pstmt, centro);
             int rows = pstmt.executeUpdate();
             if (rows == 0) throw new IllegalArgumentException("Error");
         } catch (Exception e) {
             // TODO: handle exception
         }
-        
-    }
-
-    @Override
-    public void insert(Iterable<Centro> entities) throws SQLException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'insert'");
     }
 }

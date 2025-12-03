@@ -1,77 +1,17 @@
 package com.edu;
 
 import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Types;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 
+import com.edu.dao.CentroDao;
+import com.edu.dao.EstudianteDao;
 import com.edu.domain.Centro;
 import com.edu.domain.Estudiante;
 import com.edu.domain.Titularidad;
 
 public class Main {
-
-    public static Centro resultSetToCentro(ResultSet rs) throws SQLException{
-        int id = rs.getInt("id");
-        String nombre = rs.getString("nombre");
-        Titularidad titularidad = Titularidad.fromString(rs.getString("titularidad"));
-        return new Centro(id, nombre, titularidad);
-    }
-
-    public static Estudiante resultSetToEstudiante(ResultSet rs) throws SQLException{
-        int id = rs.getInt("id");
-        String nombre = rs.getString("nombre");
-        LocalDate nacimiento = rs.getDate("nacimiento").toLocalDate();
-        Integer idCentro = rs.getInt("centro");
-        
-        Centro centro = null; 
-        if(rs.wasNull()) idCentro = null;
-        else centro = getCentro(idCentro);
-        return new Estudiante(id, nombre, nacimiento, centro);
-    }
-
-    public static Centro getCentro(int id) throws SQLException {
-        String sqlString= "SELECT * FROM Centro WHERE id= ?;";
-        ConnectionPool cp = ConnectionPool.getInstance();
-
-        try (
-            Connection conn = cp.getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sqlString)
-        ){
-            pstmt.setInt(1, id);
-            ResultSet rs = pstmt.executeQuery();
-            
-            return rs.next() ? resultSetToCentro(rs) : null;
-        }
-    }
-
-    public static List<Centro> getCentros() throws SQLException{
-        String sqlString = "SELECT * FROM Centro";
-        ConnectionPool cp = ConnectionPool.getInstance();
-        List<Centro> centros = new ArrayList<>();
-        try (
-            Connection conn = cp.getConnection();
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sqlString);
-        ){
-            while (rs.next()) centros.add(resultSetToCentro(rs));
-        }
-        return centros;
-    }
-
-    public static Estudiante getEstudiante(int id) throws SQLException{
-        return null;
-    }
-
-    public static List<Estudiante> getEstudiantes() throws SQLException{
-        return null;
-    }
 
     public static void main(String[] args) {
         
@@ -82,7 +22,7 @@ public class Main {
         //String dbUrl = String.format("%s%s", dbProtocol, dbPath);
 
         // Alternativa particular de SQLite: base de datos en memoria.
-        String dbUrl = String.format("%s", dbProtocol, ":memory:");
+        String dbUrl = String.format("%s%s", dbProtocol, "file::memory:?cache=shared");
 
         ConnectionPool cp = ConnectionPool.getInstance(dbUrl);
 
@@ -120,84 +60,38 @@ public class Main {
                 """);
             }
 
-            conn.setAutoCommit(false);
+            CentroDao centroDao = new CentroDao(cp);
+            EstudianteDao estudianteDao = new EstudianteDao(cp);
 
-            String sqlString = "INSERT INTO Centro VALUES (?, ?, ?);";
+            // Agrego los centros a la base de datos
+            centroDao.insert(centros);
 
-            try (PreparedStatement pstmt = conn.prepareStatement(sqlString)){
-                for(Centro centro: centros) {
-                    pstmt.setInt(1, centro.getId());
-                    pstmt.setString(2, centro.getNombre());
-                    pstmt.setString(3, centro.getTitularidad().toString());
-                    pstmt.addBatch();
-                } 
-                pstmt.executeBatch();
-                conn.commit();
+            // Compruebo centros.
+
+            System.out.println("--- LISTA DE CENTROS ---");
+            centroDao.get().forEach(System.out::println);
+            System.out.println("---- ************** ----");
+
+            System.out.println("---- **** ------");
+            System.out.println(centroDao.get(11004866));
+            System.out.println("---- **** ------");
+
+            Estudiante[] estudiantes = new Estudiante[] {
+                new Estudiante(null, "Perico de los Palotes", LocalDate.of(2000, 01, 01), centros[0]),
+                new Estudiante(null, "Segismundo", LocalDate.of(2002, 02, 02), null)
+            };
+
+            estudianteDao.insert(estudiantes);
+
+            System.out.println("--- LISTA DE ESTUDIANTES ---");
+            for(Estudiante estudiante: estudianteDao.get()) {
+                System.out.printf("Estudiante %d: %s.\n", estudiante.getId(), estudiante);
             }
-            catch(SQLException err) {
-                System.err.println("La insercion de centros ha fallado");
-                conn.rollback();
-                System.exit(1);
-            }
-            finally{
-                conn.setAutoCommit(true);
-            }
-                
-            try (Statement stmt = conn.createStatement()) {
-                ResultSet rs = stmt.executeQuery("SELECT id, nombre, titularidad FROM Centro");
-                while(rs.next()){
-                    Centro centro = resultSetToCentro(rs);
-                    System.out.println(centro);
-                }
-            }
-
-                System.out.println("---- **** ------");
-
-                sqlString= "SELECT * FROM Centro WHERE id= ?;";
-                try (PreparedStatement pstmt = conn.prepareStatement(sqlString)){
-                    pstmt.setInt(1, 11008121);
-                    ResultSet rs = pstmt.executeQuery();
-                    if (rs.next()) {
-                        Centro centro = resultSetToCentro(rs);
-                        System.out.println(centro);
-                    }
-                }
-
-                Estudiante[] estudiantes = new Estudiante[] {
-                    new Estudiante(null, "Perico de los Palotes", LocalDate.of(2000, 01, 01), centros[0]),
-                    new Estudiante(null, "Segismundo", LocalDate.of(2002, 02, 02), null)
-                };
-
-                sqlString = "INSERT INTO Estudiante VALUES (?, ?, ?, ?);";
-                try(PreparedStatement pstmt = conn.prepareStatement(sqlString)) {
-                    for(Estudiante estudiante: estudiantes) {
-                        pstmt.setObject(1, estudiante.getId(), Types.INTEGER);
-                        pstmt.setString(2, estudiante.getNombre());
-                        Date nacimiento = Date.valueOf(estudiante.getNacimiento());
-                        pstmt.setDate(3, nacimiento);
-                        Integer idCentro = estudiante.getCentro() == null ? null : estudiante.getCentro().getId();
-                        pstmt.setObject(4, idCentro, Types.INTEGER);
-                        pstmt.executeUpdate();
-
-                        try(ResultSet rs = pstmt.getGeneratedKeys()) {
-                            if(rs.next()) estudiante.setId(rs.getInt(1));
-                            else assert false: "La base de datos no devolvió id para el estudiante";
-                            System.out.printf("'%s' obtiene el identificador %d.\n", estudiante.getNombre(), estudiante.getId());
-                        }
-                    }
-                }
-
-                sqlString= "SELECT * FROM Estudiante WHERE id= ?;";
-                try (PreparedStatement pstmt = conn.prepareStatement(sqlString)){
-                    pstmt.setInt(1, 11008121);
-                    ResultSet rs = pstmt.executeQuery();
-                    if (rs.next()) {
-                        Estudiante estudiante = resultSetToEstudiante(rs);
-                        System.out.println(estudiante);
-                    }
-                }
-            }
+            estudianteDao.get().forEach(System.out::println);
+            System.out.println("---- ************** ----");
+        }
         catch(SQLException err) {
+            err.printStackTrace();
             System.err.println("Error de conexión. " + err.getMessage());
         }
 
