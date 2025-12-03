@@ -29,4 +29,15 @@
         </dependency>
 
     </dependencies>
+
+    <resources>
+        <!-- Para definir valores de propiedades presentes en este archivo para la aplicacion Java -->
+        <resource>
+            <directory>src/main/resources</directory>
+              <includes>
+                 <include>**/*.properties</include>
+              </includes>
+            <filtering>true</filtering>
+        </resource>
+    </resources>
 </project>
