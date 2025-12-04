@@ -1,4 +1,4 @@
-package com.edu.dao;
+package com.edu.backend.dao;
 
 import java.sql.Connection;
 import java.sql.Date;
@@ -11,66 +11,70 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.edu.ConnectionPool;
+import com.edu.backend.Conexion;
 import com.edu.domain.Centro;
 import com.edu.domain.Estudiante;
 
+import edu.acceso.sqlutils.errors.DataAccessException;
+
 public class EstudianteDao implements GenericDao<Estudiante>{
 
-    private ConnectionPool cp;
+    private Conexion cx;
 
-    public EstudianteDao(ConnectionPool cp) {
-        this.cp = cp;
+    public EstudianteDao(Conexion cx) {
+        this.cx = cx;
     }
 
 
     @Override
-    public Estudiante get(int id) throws SQLException {
+    public Estudiante get(int id) throws DataAccessException {
         String sqlString = "SELECT * FROM Estudiante WHERE id = ?";
 
         try (
-            Connection conn = cp.getConnection();
+            Connection conn = cx.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sqlString);
         ) {
             pstmt.setInt(1, id);
             ResultSet rs = pstmt.executeQuery();
             return rs.next() ? resultSetToEstudiante(rs) : null;
+        } catch (SQLException e){
+            throw new DataAccessException(e);
         }
-
     }
 
     @Override
-    public List<Estudiante> get() throws SQLException {
+    public List<Estudiante> get() throws DataAccessException {
         String sqlString = "SELECT * FROM Estudiante";
 
         List<Estudiante> estudiantes = new ArrayList<>();
 
-        try(
-            Connection conn = cp.getConnection();
+        try (
+            Connection conn = cx.getConnection();
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(sqlString);
-        ) {
-            while(rs.next()) {
-                try {
+        ){
+            while (rs.next()) {
+                try{
                     Estudiante estudiante = resultSetToEstudiante(rs);
                     estudiantes.add(estudiante);
-                } catch(SQLException e) {
-                    System.err.println("Un registro no puede convertirse en estudiante: " + e.getMessage());
+                } catch(SQLException e){
+                    System.err.println("Un registro no puede convertirse en centro: "+e.getMessage());
                 }
             }
+        } catch(SQLException e) {
+            throw new DataAccessException(e);
         }
-
         return estudiantes;
     }
 
     @Override
-    public int insert(Estudiante estudiante) throws SQLException {
+    public int insert(Estudiante estudiante) throws DataAccessException {
         String sqlString = "INSERT INTO Estudiante (nombre, nacimiento, centro, id) VALUES (?, ?, ?, ?)";
 
         if(estudiante.getId() != null) throw new IllegalArgumentException("El estudiante no puede tener identificador ya fijado");
 
         try(
-            Connection conn = cp.getConnection();
+            Connection conn = cx.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sqlString);
         ) {
             setParams(pstmt, estudiante);
@@ -79,16 +83,18 @@ public class EstudianteDao implements GenericDao<Estudiante>{
                 if(rs.next()) estudiante.setId(rs.getInt(1));
                 else assert false: "La base de datos no devolvió identificador para el estudiante";
             }
+        }catch (SQLException e){
+            throw new DataAccessException(e);
         }
 
         return estudiante.getId();
     }
 
     @Override
-    public void insert(Iterable<Estudiante> estudiantes) throws SQLException {
+    public void insert(Iterable<Estudiante> estudiantes) throws DataAccessException {
         String sqlString = "INSERT INTO Estudiante (nombre, nacimiento, centro, id) VALUES (?, ?, ?, ?)";
 
-        try (Connection conn = cp.getConnection()) {
+        try (Connection conn = cx.getConnection()) {
             conn.setAutoCommit(false);
             try(PreparedStatement pstmt = conn.prepareStatement(sqlString)) {
                 for(Estudiante estudiante: estudiantes) {
@@ -108,36 +114,42 @@ public class EstudianteDao implements GenericDao<Estudiante>{
             } finally {
                 conn.setAutoCommit(true);
             }
+        }catch (SQLException e){
+            throw new DataAccessException(e);
         }
         
     }
 
     @Override
-    public boolean remove(int id) throws SQLException {
+    public boolean remove(int id) throws DataAccessException {
         String sqlString = "DELETE FROM Estudiante WHERE id = ?";
 
         try (
-            Connection conn = cp.getConnection();
+            Connection conn = cx.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sqlString);
         ) {
             pstmt.setInt(1, id);
             int rows = pstmt.executeUpdate();
             return rows > 0;
+        }catch (SQLException e){
+            throw new DataAccessException(e);
         }
 
     }
 
     @Override
-    public void update(Estudiante estudiante) throws SQLException {
+    public void update(Estudiante estudiante) throws DataAccessException {
         String sqlString = "UPDATE Estudiante SET nombre = ?, nacimiento = ?, centro = ? WHERE id = ?";
 
         try(
-            Connection conn = cp.getConnection();
+            Connection conn = cx.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sqlString);
         ) {
             setParams(pstmt, estudiante);
             int rows = pstmt.executeUpdate();
             if(rows == 0) throw new IllegalArgumentException(String.format("El estudiante con ID %d no existe", estudiante.getId()));
+        }catch (SQLException e){
+            throw new DataAccessException(e);
         }
 
     }
@@ -150,7 +162,7 @@ public class EstudianteDao implements GenericDao<Estudiante>{
         pstmt.setObject(4, estudiante.getId(), Types.INTEGER);
     }
 
-    private Estudiante resultSetToEstudiante(ResultSet rs) throws SQLException {
+    private Estudiante resultSetToEstudiante(ResultSet rs) throws SQLException, DataAccessException {
         int id = rs.getInt("id");
         String nombre = rs.getString("nombre");
         LocalDate nacimiento;
@@ -160,10 +172,9 @@ public class EstudianteDao implements GenericDao<Estudiante>{
         Centro centro = null;
 
         if(centroId != null) {
-            CentroDao centroDao = new CentroDao(cp);
+            CentroDao centroDao = new CentroDao(cx);
             centro = centroDao.get(centroId);
         }
-
-        return new Estudiante(id, nombre, nacimiento, centro);
+            return new Estudiante(id, nombre, nacimiento, centro);
     }
 }

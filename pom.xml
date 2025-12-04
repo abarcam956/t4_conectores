@@ -13,7 +13,12 @@
         <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
-
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <dependency>
@@ -28,6 +33,12 @@
             <version>3.51.0.0</version>
         </dependency>
 
+        <!-- Mis utilidades sql -->
+        <dependency>
+            <groupId>com.github.abarcam956</groupId>
+            <artifactId>sqlutils</artifactId>
+            <version>1.0.0</version>
+        </dependency>
     </dependencies>
 
     <resources>
