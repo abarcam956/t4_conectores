@@ -7,19 +7,23 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.edu.backend.Conexion;
+import javax.sql.DataSource;
 import com.edu.domain.Centro;
 import com.edu.domain.Titularidad;
 
+import edu.acceso.sqlutils.ConnProvider;
 import edu.acceso.sqlutils.errors.DataAccessException;
 
 public class CentroDao implements GenericDao<Centro> {
 
-    private Conexion cx;
-    
-    public CentroDao(Conexion cx) {
-        this.cx = cx;
+    private ConnProvider cp;
+
+    public CentroDao(DataSource ds) {
+        cp = new ConnProvider(ds);
+    }
+
+    public CentroDao(Connection conn) {
+        cp = new ConnProvider(conn);
     }
 
     private static Centro resultSetToCentro(ResultSet rs) throws SQLException{
@@ -33,7 +37,7 @@ public class CentroDao implements GenericDao<Centro> {
     public Centro get(int id) throws DataAccessException {
         String sqlString= "SELECT * FROM Centro WHERE id= ?";
         try (
-            Connection conn = cx.getConnection();
+            Connection conn = cp.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sqlString)
         ){
             pstmt.setInt(1, id);
@@ -52,7 +56,7 @@ public class CentroDao implements GenericDao<Centro> {
         List<Centro> centros = new ArrayList<>();
 
         try (
-            Connection conn = cx.getConnection();
+            Connection conn = cp.getConnection();
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(sqlString);
         ){
@@ -75,7 +79,7 @@ public class CentroDao implements GenericDao<Centro> {
         String sqlString = "DELETE FROM Centro WHERE id= ?";
 
         try (
-            Connection conn = cx.getConnection();
+            Connection conn = cp.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sqlString);
         ){
             pstmt.setInt(1, id);
@@ -97,7 +101,7 @@ public class CentroDao implements GenericDao<Centro> {
         String sqlString = "INSERT INTO Centro (nombre, titularidad, id) VALUES (?, ?, ?)";
 
         try (
-            Connection conn = cx.getConnection();
+            Connection conn = cp.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sqlString);
         ){
             setParams(pstmt, centro);
@@ -113,7 +117,7 @@ public class CentroDao implements GenericDao<Centro> {
         String sqlString = "INSERT INTO Centro (nombre, titularidad, id) VALUES (?, ?, ?)";
 
         try (
-            Connection conn = cx.getConnection();
+            Connection conn = cp.getConnection();
         ) {
             conn.setAutoCommit(false);
 
@@ -144,7 +148,7 @@ public class CentroDao implements GenericDao<Centro> {
         String sqlString = "UPDATE Centro SET nombre = ?, titularidad = ? WHERE id = ?";
 
         try (
-            Connection conn = cx.getConnection();
+            Connection conn = cp.getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sqlString);
         ) {
             setParams(pstmt, centro);
