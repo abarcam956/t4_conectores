@@ -13,22 +13,13 @@ import com.edu.domain.Estudiante;
 import com.edu.domain.Titularidad;
 
 import edu.acceso.sqlutils.errors.DataAccessException;
-import edu.acceso.sqlutils.tx.TransactionManager;
 
 public class Main {
 
     public static void hacerTransaccion() throws DataAccessException {
         DataSource ds = Conexion.get();
 
-        TransactionManager.transactionSQL(ds, conn -> {
-            CentroDao cDao = new CentroDao(conn);
-            EstudianteDao eDao = new EstudianteDao(conn);
-
-            eDao.remove(1);
-            cDao.insert(new Centro(11004866, "xxxx", Titularidad.PUBLICA));
-        });
-
-        Conexion.transaction(ds, (eDao,cDao) -> {
+        Conexion.transaction(ds, (cDao,eDao) -> {
             eDao.remove(1);
             cDao.insert(new Centro(11004866, "xxxx", Titularidad.PUBLICA));
         });

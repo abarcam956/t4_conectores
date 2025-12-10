@@ -17,6 +17,7 @@ import com.edu.backend.dao.EstudianteDao;
 import edu.acceso.sqlutils.ConnectionPool;
 import edu.acceso.sqlutils.SqlUtils;
 import edu.acceso.sqlutils.errors.DataAccessException;
+import edu.acceso.sqlutils.tx.TransactionManager;
 
 public class Conexion {
 
@@ -27,7 +28,7 @@ public class Conexion {
 
     @FunctionalInterface
     public static interface DaoInterface {
-        public void run(CentroDao cdao, EstudianteDao edao);
+        public void run(CentroDao cdao, EstudianteDao edao) throws DataAccessException;
     }
 
     public static DataSource create(String path) throws IOException {
@@ -87,6 +88,13 @@ public class Conexion {
         return ds;
     }
 
+    public static void transaction(DataSource ds, DaoInterface operations) throws DataAccessException {
+        TransactionManager.transactionSQL(ds, conn -> {
+            CentroDao cDao = new CentroDao(conn);
+            EstudianteDao eDao = new EstudianteDao(conn);
+            
+            operations.run(cDao, eDao);
+        });
+    }
 
-    
 }
