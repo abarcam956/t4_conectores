@@ -2,16 +2,13 @@ package com.edu;
 
 import java.io.IOException;
 import java.time.LocalDate;
-
 import javax.sql.DataSource;
-
 import com.edu.backend.Conexion;
 import com.edu.backend.dao.CentroDao;
 import com.edu.backend.dao.EstudianteDao;
 import com.edu.domain.Centro;
 import com.edu.domain.Estudiante;
 import com.edu.domain.Titularidad;
-
 import edu.acceso.sqlutils.errors.DataAccessException;
 
 public class Main {

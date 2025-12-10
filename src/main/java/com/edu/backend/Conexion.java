@@ -8,12 +8,9 @@ import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-
 import javax.sql.DataSource;
-
 import com.edu.backend.dao.CentroDao;
 import com.edu.backend.dao.EstudianteDao;
-
 import edu.acceso.sqlutils.ConnectionPool;
 import edu.acceso.sqlutils.SqlUtils;
 import edu.acceso.sqlutils.errors.DataAccessException;
