@@ -59,7 +59,7 @@ public class Main {
 
             Estudiante[] estudiantes = new Estudiante[] {
                 new Estudiante(null, "Perico de los Palotes", LocalDate.of(2000, 01, 01), centros[0]),
-                new Estudiante(null, "Segismundo", LocalDate.of(2002, 02, 02), null)
+                new Estudiante(null, "Segismundo", LocalDate.of(2002, 02, 02), centros[1])
             };
 
             estudianteDao.insert(estudiantes);
